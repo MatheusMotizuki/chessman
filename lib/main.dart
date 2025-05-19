@@ -1,23 +1,28 @@
 import 'package:flutter/cupertino.dart'; // Add this import for Cupertino widgets/colors
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart'; // Add this import for kIsWeb
 import 'package:flutter_svg/flutter_svg.dart'; // Add this import
 import 'package:google_fonts/google_fonts.dart'; // Adicione esta importação
+import 'package:image_picker/image_picker.dart'; // Add this for ImageSource and ImagePicker
+import 'dart:io'; // Add this for File class
 
-void main() => runApp(FilmeApp());
+void main() => runApp(const FilmeApp());
 
 class Filme {
   String titulo;
   String genero;
   double nota;
   bool visto;
+  String? imageUrl;
 
   Filme(
       {required this.titulo,
       required this.genero,
       required this.nota,
-      this.visto = false});
+      required this.imageUrl,
+      this.visto = false,
+      });
 }
-
 class FilmeApp extends StatelessWidget {
   const FilmeApp({super.key});
 
@@ -26,23 +31,35 @@ class FilmeApp extends StatelessWidget {
     return MaterialApp(
       title: 'Catálogo de Filmes',
       theme: ThemeData(
-        primaryColor: const Color.fromARGB(255, 255, 255, 255),
-        scaffoldBackgroundColor: Colors.white,
+        primaryColor: const Color(0xFF141414),
+        scaffoldBackgroundColor: const Color(0xFF141414),
+        textTheme: const TextTheme(
+          bodyMedium: TextStyle(color: Colors.white),
+          bodyLarge: TextStyle(color: Colors.white),
+          bodySmall: TextStyle(color: Colors.white),
+          displayLarge: TextStyle(color: Colors.white),
+          displayMedium: TextStyle(color: Colors.white),
+          displaySmall: TextStyle(color: Colors.white),
+          titleMedium: TextStyle(color: Colors.white),
+          titleLarge: TextStyle(color: Colors.white),
+          titleSmall: TextStyle(color: Colors.white),
+        ),
         appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black,
+          backgroundColor: Color(0xFF141414),
+          foregroundColor: Colors.white,
           elevation: 0,
         ),
         cardTheme: CardTheme(
           elevation: 0,
+          color: const Color(0xFF1F1F1F),
           shape: RoundedRectangleBorder(
-            side: BorderSide(color: Colors.grey.shade300),
+            side: const BorderSide(color: Color(0xFF2A2A2A)),
             borderRadius: BorderRadius.circular(8),
           ),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.black,
+            backgroundColor: const Color(0xFF1F1F1F),
             foregroundColor: Colors.white,
             minimumSize: const Size(double.infinity, 48),
             shape: RoundedRectangleBorder(
@@ -51,25 +68,48 @@ class FilmeApp extends StatelessWidget {
           ),
         ),
         inputDecorationTheme: InputDecorationTheme(
+          labelStyle: const TextStyle(color: Colors.white70),
+          hintStyle: const TextStyle(color: Colors.white38),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: Colors.grey.shade300),
+            borderSide: const BorderSide(color: Color(0xFF2A2A2A)),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: Colors.grey.shade300),
+            borderSide: const BorderSide(color: Color(0xFF2A2A2A)),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: Colors.black, width: 2),
+            borderSide: const BorderSide(color: Colors.white, width: 2),
           ),
           filled: true,
-          fillColor: Colors.grey.shade50,
+          fillColor: const Color(0xFF1F1F1F),
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         ),
+        iconTheme: const IconThemeData(
+          color: Colors.white,
+        ),
+        colorScheme: const ColorScheme.dark(
+          surface: Color(0xFF1F1F1F),
+          primary: Colors.white,
+          onPrimary: Color(0xFF141414),
+          secondary: Color(0xFF3F51B5),
+          onSecondary: Colors.white,
+        ),
+        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+          backgroundColor: Color(0xFF141414),
+          selectedItemColor: Colors.white,
+          unselectedItemColor: Color(0xFF8E8E8E),
+        ),
       ),
       home: const MainNavigationPage(),
+      darkTheme: ThemeData.dark().copyWith(
+        scaffoldBackgroundColor: const Color(0xFF141414),
+        primaryColor: const Color(0xFF141414),
+        cardColor: const Color(0xFF1F1F1F),
+      ),
+      themeMode: ThemeMode.dark,
       debugShowCheckedModeBanner: false,
     );
   }
@@ -79,6 +119,7 @@ class MainNavigationPage extends StatefulWidget {
   const MainNavigationPage({super.key});
 
   @override
+  // ignore: library_private_types_in_public_api
   _MainNavigationPageState createState() => _MainNavigationPageState();
 }
 
@@ -126,7 +167,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
 
     // Define active and inactive colors
     const Color activeColor =
-        CupertinoColors.activeBlue; // Or your desired active color
+        Color.fromARGB(255, 0, 38, 255); // Or your desired active color
     const Color inactiveColor =
         CupertinoColors.inactiveGray; // Or your desired inactive color
 
@@ -195,6 +236,7 @@ class ListaFilmesPage extends StatefulWidget {
   const ListaFilmesPage({super.key, required this.filmes});
 
   @override
+  // ignore: library_private_types_in_public_api
   _ListaFilmesPageState createState() => _ListaFilmesPageState();
 }
 
@@ -297,20 +339,34 @@ class _FilmeGridItem extends StatelessWidget {
 
   // Helper function to get background decoration based on genre
   BoxDecoration _getBackgroundDecoration(String genero) {
-    // Placeholder: Use colors/gradients for now.
-    // Replace with DecorationImage for actual repeating patterns.
+    // If there's an image, use it as the background
+    if (filme.imageUrl != null) {
+      // For web or network images
+      if (filme.imageUrl!.startsWith('http')) {
+        return BoxDecoration(
+          image: DecorationImage(
+            image: NetworkImage(filme.imageUrl!),
+            fit: BoxFit.cover,
+          ),
+        );
+      }
+      // For file images
+      else if (filme.imageUrl!.startsWith('file://')) {
+        String path = filme.imageUrl!.replaceFirst('file://', '');
+        return BoxDecoration(
+          image: DecorationImage(
+            image: kIsWeb ? NetworkImage(path) : FileImage(File(path)) as ImageProvider,
+            fit: BoxFit.cover,
+          ),
+        );
+      }
+    }
+    
+    // Fallback to color backgrounds if no image is available
     Color backgroundColor;
     switch (genero.toLowerCase()) {
       case 'comédia':
         backgroundColor = Colors.yellow.shade100;
-        // Example for image:
-        // return BoxDecoration(
-        //   image: DecorationImage(
-        //     image: AssetImage('assets/images/comedy_pattern.png'), // Provide your asset path
-        //     repeat: ImageRepeat.repeat,
-        //     colorFilter: ColorFilter.mode(Colors.black.withOpacity(0.1), BlendMode.dstATop), // Optional overlay
-        //   ),
-        // );
         break;
       case 'ação':
         backgroundColor = Colors.red.shade100;
@@ -338,22 +394,17 @@ class _FilmeGridItem extends StatelessWidget {
     }
     return BoxDecoration(color: backgroundColor);
   }
-
   // Helper to determine text color based on background
   Color _getTextColor(String genero) {
-    // Make text darker on light backgrounds, lighter on dark backgrounds
-    switch (genero.toLowerCase()) {
-      case 'terror':
-        return Colors.white; // Light text on dark background
-      default:
-        return Colors.black87; // Dark text on light backgrounds
-    }
+    // Always use white text on dark backgrounds
+    return Colors.white;
   }
 
   @override
   Widget build(BuildContext context) {
     final decoration = _getBackgroundDecoration(filme.genero);
     final textColor = _getTextColor(filme.genero);
+    // ignore: deprecated_member_use
     final subtleTextColor = textColor.withOpacity(0.7);
 
     return GestureDetector(
@@ -365,6 +416,7 @@ class _FilmeGridItem extends StatelessWidget {
           borderRadius: BorderRadius.circular(12.0), // Rounded corners
         ),
         clipBehavior: Clip.antiAlias, // Clip content to bounds
+        color: const Color(0xFF141414), // Dark background color
         child: Container(
           // Apply the background decoration here
           decoration: decoration,
@@ -383,10 +435,10 @@ class _FilmeGridItem extends StatelessWidget {
                     Expanded(
                       child: Text(
                         filme.titulo,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600, // Bolder title
-                          color: textColor, // Use dynamic text color
+                          color: Color(0xFFFFFFFF), // White text color
                         ),
                         maxLines: 2, // Limit title lines
                         overflow: TextOverflow.ellipsis,
@@ -413,16 +465,15 @@ class _FilmeGridItem extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        // Use a slightly transparent background for the chip
-                        color: Colors.black.withOpacity(0.1),
+                        // Use a slightly transparent white for the chip
+                        color: Colors.white.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
                         filme.genero,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 11,
-                          // Ensure chip text is readable on its background
-                          color: textColor.withOpacity(0.9),
+                          color: Color(0xFFFFFFFF), // White text
                           fontWeight: FontWeight.w500,
                         ),
                         maxLines: 1,
@@ -441,7 +492,7 @@ class _FilmeGridItem extends StatelessWidget {
                           filme.nota.toStringAsFixed(1), // Format nota
                           style: TextStyle(
                             fontSize: 12,
-                            color: subtleTextColor, // Use dynamic subtle color
+                            color: subtleTextColor, // Slightly transparent white
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -457,7 +508,6 @@ class _FilmeGridItem extends StatelessWidget {
     );
   }
 }
-
 class FormularioFilmePage extends StatefulWidget {
   final Filme? filme;
   final Function(Filme) onSave;
@@ -465,15 +515,16 @@ class FormularioFilmePage extends StatefulWidget {
   const FormularioFilmePage({super.key, this.filme, required this.onSave});
 
   @override
+  // ignore: library_private_types_in_public_api
   _FormularioFilmePageState createState() => _FormularioFilmePageState();
 }
-
 class _FormularioFilmePageState extends State<FormularioFilmePage> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _tituloController;
-  // Remove genero controller: late TextEditingController _generoController;
   late TextEditingController _notaController;
   bool _visto = false;
+  String? _imageUrl; // Store the image path
+  File? _imageFile; // Store the local image file
 
   // Define genre options
   final List<String> _generos = [
@@ -496,44 +547,103 @@ class _FormularioFilmePageState extends State<FormularioFilmePage> {
   void initState() {
     super.initState();
     _tituloController = TextEditingController(text: widget.filme?.titulo ?? '');
-    // Initialize selected genre
     _selectedGenero = widget.filme?.genero;
-    // Ensure the initial genre is in the list, otherwise default or handle
     if (_selectedGenero != null && !_generos.contains(_selectedGenero)) {
-      // Option 1: Add it to the list if not present (might grow indefinitely)
-      // _generos.add(_selectedGenero!);
-      // Option 2: Default to null or the first item if not found
-      _selectedGenero = null; // Or _generos.first;
+      _selectedGenero = null;
     }
-    // If adding a new movie, default to the first genre or null
-    if (widget.filme == null && _generos.isNotEmpty) {
-      // _selectedGenero = _generos.first; // Optionally default to first
-    }
-
     _notaController =
         TextEditingController(text: widget.filme?.nota.toString() ?? '');
     _visto = widget.filme?.visto ?? false;
+    _imageUrl = widget.filme?.imageUrl; // Initialize image URL
+    
+    // If we have an image URL from an existing movie, try to load it
+    if (_imageUrl != null && _imageUrl!.startsWith('file://')) {
+      _imageFile = File(_imageUrl!.replaceFirst('file://', ''));
+    }
   }
 
   @override
   void dispose() {
     _tituloController.dispose();
-    // Remove genero controller disposal: _generoController.dispose();
     _notaController.dispose();
     super.dispose();
   }
 
+  // Real implementation for image picking
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? pickedImage = await picker.pickImage(
+        source: source,
+        maxWidth: 800,
+        imageQuality: 80,
+      );
+      
+      if (pickedImage != null) {
+        setState(() {
+          _imageFile = File(pickedImage.path);
+          // Store the file path with a protocol to identify it
+          _imageUrl = 'file://${pickedImage.path}';
+        });
+      }
+    } catch (e) {
+      // Show error message
+      showCupertinoDialog(
+        // ignore: use_build_context_synchronously
+        context: context,
+        builder: (context) => CupertinoAlertDialog(
+          title: const Text('Erro'),
+          content: Text('Não foi possível selecionar a imagem: $e'),
+          actions: [
+            CupertinoDialogAction(
+              child: const Text('OK'),
+              onPressed: () => Navigator.pop(context),
+            )
+          ],
+        ),
+      );
+    }
+  }
+
+  // Show image source selection dialog
+  void _showImageSourceDialog() {
+    showCupertinoModalPopup(
+      context: context,
+      builder: (context) => CupertinoActionSheet(
+        title: const Text('Selecionar imagem'),
+        message: const Text('Escolha de onde você quer selecionar a imagem'),
+        actions: [
+          CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.pop(context);
+              _pickImage(ImageSource.camera);
+            },
+            child: const Text('Câmera'),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.pop(context);
+              _pickImage(ImageSource.gallery);
+            },
+            child: const Text('Galeria'),
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.pop(context),
+          isDestructiveAction: true,
+          child: const Text('Cancelar'),
+        ),
+      ),
+    );
+  }
   void _salvar() {
-    // Use Form validation if needed
     final titulo = _tituloController.text.trim();
-    // Use selected genre: final genero = _generoController.text.trim();
     final genero = _selectedGenero;
     final notaStr = _notaController.text.trim();
     final nota = double.tryParse(notaStr);
 
-    // Simple validation example
     if (titulo.isEmpty ||
-        genero == null || // Check if a genre was selected
+        genero == null ||
         nota == null ||
         nota < 0 ||
         nota > 10) {
@@ -556,30 +666,24 @@ class _FormularioFilmePageState extends State<FormularioFilmePage> {
 
     final novoFilme = Filme(
       titulo: titulo,
-      genero: genero, // Use selected genre
+      genero: genero,
       nota: nota,
       visto: _visto,
+      imageUrl: _imageUrl, // Add the image URL to the Filme object
     );
 
-    // If editing, pop with the updated movie
     if (widget.filme != null) {
       Navigator.pop(context, novoFilme);
     } else {
-      // If adding, call the onSave callback and pop
       widget.onSave(novoFilme);
-      // No need to pop here if onSave handles navigation (like setting index)
-      // If FormularioFilmePage was pushed modally, you might pop here:
-      // Navigator.pop(context);
     }
   }
 
-  // Function to show the genre picker
   void _showGenrePicker() {
-    // Find the initial index
     int initialItemIndex =
         _selectedGenero != null ? _generos.indexOf(_selectedGenero!) : 0;
     if (initialItemIndex < 0) {
-      initialItemIndex = 0; // Handle case where genre isn't in list
+      initialItemIndex = 0;
     }
 
     showCupertinoModalPopup<void>(
@@ -587,21 +691,17 @@ class _FormularioFilmePageState extends State<FormularioFilmePage> {
       builder: (BuildContext context) => Container(
         height: 216,
         padding: const EdgeInsets.only(top: 6.0),
-        // The Bottom margin is provided to align the popup above the system navigation bar.
         margin: EdgeInsets.only(
           bottom: MediaQuery.of(context).viewInsets.bottom,
         ),
-        // Provide a background color for the popup.
-        color: CupertinoColors.systemBackground.resolveFrom(context),
-        // Use a SafeArea widget to avoid system overlaps.
+        color: const Color(0xFF141414),
         child: SafeArea(
           top: false,
           child: CupertinoPicker(
             magnification: 1.22,
             squeeze: 1.2,
             useMagnifier: true,
-            itemExtent: 32.0, // Height of each item
-            // This is called when selected item is changed.
+            itemExtent: 32.0,
             onSelectedItemChanged: (int selectedIndex) {
               setState(() {
                 _selectedGenero = _generos[selectedIndex];
@@ -611,7 +711,12 @@ class _FormularioFilmePageState extends State<FormularioFilmePage> {
               initialItem: initialItemIndex,
             ),
             children: List<Widget>.generate(_generos.length, (int index) {
-              return Center(child: Text(_generos[index]));
+              return Center(
+                child: Text(
+                  _generos[index],
+                  style: const TextStyle(color: Color(0xFFFFFFFF)),
+                ),
+              );
             }),
           ),
         ),
@@ -621,45 +726,169 @@ class _FormularioFilmePageState extends State<FormularioFilmePage> {
 
   @override
   Widget build(BuildContext context) {
-    // Use GestureDetector to dismiss keyboard when tapping outside fields
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: CupertinoPageScaffold(
-        navigationBar: CupertinoNavigationBar(
-          middle:
-              Text(widget.filme == null ? 'Adicionar Filme' : 'Editar Filme'),
-          // Remove the leading back button
-          // leading: CupertinoNavigationBarBackButton(
-          //   onPressed: () => Navigator.pop(context),
-          // ),
-          // Add Save button in the nav bar
-          trailing: CupertinoButton(
-            padding: EdgeInsets.zero,
-            onPressed: _salvar,
-            child: const Text('Salvar'), // Call the save function
+        backgroundColor: const Color(0xFF141414),
+        navigationBar: const CupertinoNavigationBar(
+          backgroundColor: Color(0xFF141414),
+          middle: Text(
+            'Adicionar Filme',
+            style: TextStyle(color: Color(0xFFFFFFFF)),
           ),
+          border: Border(bottom: BorderSide(color: Color(0xFF2A2A2A))),
         ),
         child: SafeArea(
-          // Use SafeArea to avoid intrusions
           child: Form(
             key: _formKey,
-            // Use ListView for scrollability, especially with keyboard
             child: ListView(
               children: [
+                // Image selection widget
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: GestureDetector(
+                    onTap: _showImageSourceDialog,
+                    child: Container(
+                      height: 200,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1F1F1F),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: const Color(0xFF2A2A2A),
+                          width: 1,
+                        ),
+                      ),
+                      child: _imageFile != null
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(11),
+                              child: kIsWeb 
+                                ? Image.network(
+                                  _imageFile!.path,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return const Center(
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(CupertinoIcons.exclamationmark_circle, 
+                                            color: CupertinoColors.systemRed,
+                                            size: 40,
+                                          ),
+                                          SizedBox(height: 8),
+                                          Text(
+                                            'Erro ao carregar imagem',
+                                            style: TextStyle(color: Color(0xFFFFFFFF)),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                )
+                                : Image.file(
+                                  _imageFile!,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return const Center(
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(CupertinoIcons.exclamationmark_circle, 
+                                            color: CupertinoColors.systemRed,
+                                            size: 40,
+                                          ),
+                                          SizedBox(height: 8),
+                                          Text(
+                                            'Erro ao carregar imagem',
+                                            style: TextStyle(color: Color(0xFFFFFFFF)),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                ),
+                            )
+                          : _imageUrl != null && _imageUrl!.startsWith('http')
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(11),
+                                  child: Image.network(
+                                    _imageUrl!,
+                                    fit: BoxFit.cover,
+                                    loadingBuilder: (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return const Center(
+                                        child: CupertinoActivityIndicator(
+                                          color: Color(0xFFFFFFFF),
+                                        ),
+                                      );
+                                    },
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return const Center(
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(CupertinoIcons.exclamationmark_circle, 
+                                              color: CupertinoColors.systemRed,
+                                              size: 40,
+                                            ),
+                                            SizedBox(height: 8),
+                                            Text(
+                                              'Erro ao carregar imagem',
+                                              style: TextStyle(color: Color(0xFFFFFFFF)),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                )
+                              : const Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      CupertinoIcons.photo_camera,
+                                      size: 40,
+                                      color: Color(0xFF8E8E8E),
+                                    ),
+                                    SizedBox(height: 8),
+                                    Text(
+                                      'Adicionar Imagem',
+                                      style: TextStyle(
+                                        color: Color(0xFF8E8E8E),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                    ),
+                  ),
+                ),
                 CupertinoFormSection.insetGrouped(
-                  header: const Text('DETALHES DO FILME'),
+                  backgroundColor: const Color(0xFF141414),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1F1F1F),
+                    border: Border.all(color: const Color(0xFF2A2A2A)),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  header: const Text(
+                    'DETALHES DO FILME',
+                    style: TextStyle(color: Color(0xFF8E8E8E)),
+                  ),
                   children: [
                     CupertinoTextFormFieldRow(
                       controller: _tituloController,
-                      prefix: const Text('Título'),
+                      prefix: const Text('Título', style: TextStyle(color: Color(0xFFFFFFFF))),
                       placeholder: 'Nome do filme',
+                      style: const TextStyle(color: Color(0xFFFFFFFF)),
+                      placeholderStyle: const TextStyle(color: Color(0xFF8E8E8E)),
                       textCapitalization: TextCapitalization.sentences,
                       validator: (value) =>
                           value!.isEmpty ? 'Campo obrigatório' : null,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF1F1F1F),
+                      ),
                     ),
-                    // Row for Genre Picker
                     CupertinoFormRow(
-                      prefix: const Text('Gênero'),
+                      prefix: const Text('Gênero', style: TextStyle(color: Color(0xFFFFFFFF))),
                       child: CupertinoButton(
                         padding: EdgeInsets.zero,
                         alignment: Alignment.centerRight,
@@ -668,17 +897,18 @@ class _FormularioFilmePageState extends State<FormularioFilmePage> {
                           _selectedGenero ?? 'Selecione...',
                           style: TextStyle(
                             color: _selectedGenero == null
-                                ? CupertinoColors.placeholderText
-                                    .resolveFrom(context)
-                                : CupertinoColors.label.resolveFrom(context),
+                                ? const Color(0xFF8E8E8E)
+                                : const Color(0xFFFFFFFF),
                           ),
                         ),
                       ),
                     ),
                     CupertinoTextFormFieldRow(
                       controller: _notaController,
-                      prefix: const Text('Nota'),
+                      prefix: const Text('Nota', style: TextStyle(color: Color(0xFFFFFFFF))),
                       placeholder: '0.0 - 10.0',
+                      style: const TextStyle(color: Color(0xFFFFFFFF)),
+                      placeholderStyle: const TextStyle(color: Color(0xFF8E8E8E)),
                       keyboardType:
                           const TextInputType.numberWithOptions(decimal: true),
                       validator: (value) {
@@ -688,14 +918,30 @@ class _FormularioFilmePageState extends State<FormularioFilmePage> {
                         }
                         return null;
                       },
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF1F1F1F),
+                      ),
                     ),
                   ],
                 ),
                 CupertinoFormSection.insetGrouped(
-                  header: const Text('STATUS'),
+                  backgroundColor: const Color(0xFF141414),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1F1F1F),
+                    border: Border.all(color: const Color(0xFF2A2A2A)),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  header: const Text(
+                    'STATUS',
+                    style: TextStyle(color: Color(0xFF8E8E8E)),
+                  ),
                   children: [
                     CupertinoFormRow(
-                      prefix: const Text('Já assistido?'),
+                      prefix: const Text(
+                        'Já assistido?',
+                        style: TextStyle(color: Color(0xFFFFFFFF)),
+                      ),
                       child: CupertinoSwitch(
                         value: _visto,
                         onChanged: (value) => setState(() => _visto = value),
@@ -704,7 +950,14 @@ class _FormularioFilmePageState extends State<FormularioFilmePage> {
                     ),
                   ],
                 ),
-                // Removed the bottom ElevatedButton
+                // Add save button
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: CupertinoButton.filled(
+                    onPressed: _salvar,
+                    child: const Text('Salvar'),
+                  ),
+                ),
               ],
             ),
           ),
@@ -722,16 +975,19 @@ class PaginaFavoritos extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Use CupertinoPageScaffold for iOS look and feel
+    // Use CupertinoPageScaffold for iOS look and feel with dark theme
     return CupertinoPageScaffold(
-      // Use CupertinoNavigationBar
+      backgroundColor: const Color(0xFF141414),
+      // Use CupertinoNavigationBar with dark styling
       navigationBar: const CupertinoNavigationBar(
-        middle: Text('Favoritos'), // Simple title
+        backgroundColor: Color(0xFF141414),
+        middle: Text('Favoritos', style: TextStyle(color: Color(0xFFFFFFFF))),
+        border: Border(bottom: BorderSide(color: Color(0xFF2A2A2A))),
       ),
       child: SafeArea(
         // Ensure content avoids notches and system areas
         child: filmes.isEmpty
-            ? Center(
+            ? const Center(
                 // Centered empty state message
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -739,26 +995,21 @@ class PaginaFavoritos extends StatelessWidget {
                     Icon(
                       CupertinoIcons.heart, // Use Cupertino heart icon
                       size: 60,
-                      color: CupertinoColors.systemGrey.resolveFrom(context),
+                      color: Color(0xFF8E8E8E),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     Text(
                       'Nenhum filme favorito',
-                      style: CupertinoTheme.of(context)
-                          .textTheme
-                          .tabLabelTextStyle
-                          .copyWith(
-                              color: CupertinoColors.secondaryLabel
-                                  .resolveFrom(context)),
+                      style: TextStyle(
+                          color: Color(0xFFFFFFFF),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500),
                     ),
                     Text(
                       'Filmes vistos com nota 9+ aparecem aqui.',
-                      style: CupertinoTheme.of(context)
-                          .textTheme
-                          .tabLabelTextStyle // Use tabLabelTextStyle as an alternative
-                          .copyWith(
-                              color: CupertinoColors.tertiaryLabel
-                                  .resolveFrom(context)),
+                      style: TextStyle(
+                          color: Color(0xFF8E8E8E),
+                          fontSize: 14),
                     ),
                   ],
                 ),
@@ -769,35 +1020,45 @@ class PaginaFavoritos extends StatelessWidget {
                 itemBuilder: (context, index) {
                   final filme = filmes[index];
                   // Use CupertinoListTile for standard iOS list item appearance
-                  return CupertinoListTile(
-                    title: Text(
-                      filme.titulo,
-                      style: const TextStyle(fontWeight: FontWeight.w500),
+                  return Container(
+                    decoration: const BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(color: Color(0xFF2A2A2A), width: 0.5),
+                      ),
                     ),
-                    subtitle: Text(filme.genero), // Show genre as subtitle
-                    // Display rating in the trailing section
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min, // Keep row compact
-                      children: [
-                        Icon(
-                          CupertinoIcons.star_fill, // Filled star icon
-                          color: CupertinoColors.systemYellow.resolveFrom(
-                              context), // Use system yellow for stars
-                          size: 18,
+                    child: CupertinoListTile(
+                      backgroundColor: const Color(0xFF141414),
+                      title: Text(
+                        filme.titulo,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w500, 
+                          color: Color(0xFFFFFFFF)
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          filme.nota.toStringAsFixed(1),
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: CupertinoColors.secondaryLabel
-                                .resolveFrom(context),
+                      ),
+                      subtitle: Text(
+                        filme.genero,
+                        style: const TextStyle(color: Color(0xFF8E8E8E)),
+                      ), // Show genre as subtitle
+                      // Display rating in the trailing section
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min, // Keep row compact
+                        children: [
+                          const Icon(
+                            CupertinoIcons.star_fill, // Filled star icon
+                            color: Colors.amber, // Use amber for stars
+                            size: 18,
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 4),
+                          Text(
+                            filme.nota.toStringAsFixed(1),
+                            style: const TextStyle(
+                              fontSize: 15,
+                              color: Color(0xFFFFFFFF),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    // Optional: Add padding if needed, but CupertinoListTile handles some
-                    // padding: const EdgeInsets.symmetric(vertical: 8.0),
                   );
                 },
               ),
