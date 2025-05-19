@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart'; // Add this import for Cupertino widget
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'; // Add this import for kIsWeb
 import 'package:flutter_svg/flutter_svg.dart'; // Add this import
-import 'package:google_fonts/google_fonts.dart'; // Adicione esta importação
+// Adicione esta importação
 import 'package:image_picker/image_picker.dart'; // Add this for ImageSource and ImagePicker
 import 'dart:io'; // Add this for File class
 
@@ -466,6 +466,7 @@ class _FilmeGridItem extends StatelessWidget {
                           horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         // Use a slightly transparent white for the chip
+                        // ignore: deprecated_member_use
                         color: Colors.white.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(4),
                       ),
@@ -508,6 +509,7 @@ class _FilmeGridItem extends StatelessWidget {
     );
   }
 }
+
 class FormularioFilmePage extends StatefulWidget {
   final Filme? filme;
   final Function(Filme) onSave;
@@ -636,6 +638,7 @@ class _FormularioFilmePageState extends State<FormularioFilmePage> {
       ),
     );
   }
+
   void _salvar() {
     final titulo = _tituloController.text.trim();
     final genero = _selectedGenero;
